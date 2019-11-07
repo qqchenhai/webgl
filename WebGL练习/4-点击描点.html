@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+    <style>
+        #canvas {
+            margin: 40px;
+        }
+    </style>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <button onclick="clearMap()">清空点位信息</button>
+    <button onclick="clearAll()">重绘</button>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        /* CSEL ES语言------------开始 */
+        /* 
+         顶点着色器程序
+         */
+        var VSHADER_SOURCE =
+            'attribute vec4 a_Position;\n' +
+            'attribute float a_PointSize;\n' +
+            'void main(){\n' + 'gl_Position = a_Position;\n' +    //设置坐标
+            'gl_PointSize = a_PointSize;\n' +     // 设置尺寸(中心点大小,必须带上小数点.0)
+            '}\n';
+        /* 
+        片元着色器程序
+         */
+        var FSHADER_SOURCE =
+            'precision mediump float;\n' +
+            'uniform vec4 u_color;\n' +
+            'void main(){\n' +
+            'gl_FragColor=u_color;}'; // 设置颜色rgba
+        /* CSEL ES语言------------结束 */
+        var ctx = document.getElementById('canvas');
+        var gl = getWebGLContext(ctx);
+        // 存储点击位置
+        var g_points = [];
+        function main() {
+            if (!gl) return;
+            // 初始化着色器
+            if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+                console.log('初始化着色器失败');
+                return;
+            }
+            // 获取attribute变量存储位置(注意：gl.program（程序对象）是由initShaders函数初始化形成的)
+            var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+            if (a_Position < 0) {
+                console.log('未能获取存储变量a_Position的位置')
+                return;
+            }
+            var a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+            if (a_PointSize < 0) {
+                console.log('未能获取存储变量a_PointSize的位置')
+                return;
+            }
+            var u_color = gl.getUniformLocation(gl.program, 'u_color');
+            if (!u_color) {
+                console.log('未能获取存储变量u_color的位置')
+                return;
+            }
+            /* webgl函数命名规范 => 函数名 参数个数 参数类型 */
+            // 将顶点位置传输给   attribute 变量
+            gl.vertexAttrib3f(a_Position, -0.2, 0, 0);
+            gl.vertexAttrib1f(a_PointSize, 10.0);
+            /* --函数名-gl.vertexAttrib--参数个数-1--参数类型-f(float浮点型) */
+
+            /* 注册鼠标点击事件 */
+            ctx.onmousedown = function (ev) {
+                click(ev, gl, ctx, a_Position);
+            }
+            /* 指定 颜色缓冲区的默认背景色 */
+            gl.clearColor(1, .5, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            function click(ev, gl, ctx, a_Position) {
+                // 得到浏览器客户区点击坐标
+                let x = ev.clientX;
+                let y = ev.clientY;
+                // 得到canvas对象
+                let rect = ev.target.getBoundingClientRect();
+                // rect.left,rect.top表示 webGL在canvas上的图形绘制区域距离窗口的位置
+                // console.log(rect.left,rect.top);
+
+                /* 因为 webGL在canvas上的坐标系统是中心原点而不是以左上角为坐标系原点,并且该坐标系
+                规定了临界值 ，所以 横纵坐标需要重新计算*/
+                /* 
+          ——|———————————————|——————————————————————————————————————————————
+                |浏             |      （0，1，0）         浏览器视图区
+                |览             |—————*————^——————————
+                |器             |                   |                |
+                |视             |                   |                |
+                |图             |                   |     ▬        |
+                |区             |  canvas     |                 |
+                |                 | 绘图区      |                 |（1，0，0）
+                |      (-1,0,0) *—————————*————————————————>
+                |                   |             0 |                |
+                |                   |               |                |
+                |                   |               |                |
+                |                   |               |                |
+                |                   |（0,-1,0）|               |             
+                |               ——————*————————————————
+                 */
+
+                /* 根据计算得出点击坐标在webGL画布上的坐标 */
+                x = ((x - rect.left) - ctx.width / 2) / (ctx.width / 2);
+                y = (ctx.height / 2 - (y - rect.top)) / (ctx.height / 2);
+                g_points.push([x, y]);
+                // 清除canvas
+                // gl.clearColor(1, .5, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                let len = g_points.length;
+                for (let i = 0; i < len; i++) {
+                    // 给每个点定义 顶点着色器的坐标
+                    let Point = [g_points[i][0], g_points[i][1]];
+                    // 讲点坐标传输到 a_Position 变量中
+                    gl.vertexAttrib3f(a_Position, Point[0], Point[1], 0);
+                    // 绘制点随即色
+                    let r, g, b;
+                    r = parseFloat(Math.random().toFixed(1));
+                    g = parseFloat(Math.random().toFixed(1));
+                    b = parseFloat(Math.random().toFixed(1));
+                    // 将点颜色传输到 u_color 变量中
+                    gl.uniform4f(u_color, r, g, b, 1);
+                    // 绘制点(gl.POINTS)
+                    gl.drawArrays(gl.POINTS, 0, 1);
+                }
+            }
+        }
+        /* 隐藏描点 */
+        function clearMap() {
+            gl.clearColor(1, .5, 0, 1);     // 设置颜色缓冲区
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        /* 清除画布描点 */
+        function clearAll() {
+            g_points = [];
+            gl.clearColor(1, .5, 0, 1);     // 设置颜色额缓冲区
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+
+    </script>
+</body>
+
+</html>

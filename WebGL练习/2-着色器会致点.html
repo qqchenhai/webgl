@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        function main() {
+            /* CSEL ES语言------------开始 */
+            /* 
+             顶点着色器程序:vec4类型第四个参数默认为    1.0
+             */
+            var VSHADER_SOURCE =
+                'void main(){\n' + 'gl_Position=vec4(0,0.5,0,1);\n' +    //设置坐标
+                'gl_PointSize = 10.0;\n' +     // 设置尺寸(中心点大小,必须带上小数点.0)
+                '}\n';
+            /* 
+            片元着色器程序
+             */
+            var FSHADER_SOURCE =
+                'void main(){\n' +
+                'gl_FragColor=vec4(0,1,1,1);}'; // 设置颜色rgba,这里注意rgb的值不是0~255而是0~1
+            /* CSEL ES语言------------结束 */
+            var ctx = document.getElementById('canvas');
+            var gl = getWebGLContext(ctx);
+            if (!gl) return;
+            // 初始化着色器
+            if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+                console.log('初始化着色器失败');
+                return;
+            }
+            // 设置canvas背景色
+            gl.clearColor(1, .5, 0, 1);
+            // 清空canvas(注意：清空前，需要设定背景色)
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            // 绘制一个点
+            gl.drawArrays(gl.POINTS, 0, 15)
+        }
+    </script>
+</body>
+
+</html>

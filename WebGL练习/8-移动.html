@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <button onclick="move()">移动</button>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        let ctx, gl, n;
+        /* CSEL ES语言------------开始 */
+        /* 
+         顶点着色器程序:vec4类型第四个参数默认为    1.0
+         */
+        //  平移
+         var VSHADER_SOURCE =
+             'attribute vec4 a_Position;\n' +
+             'uniform vec4  u_trans;\n' +
+             'void main(){\n' + 'gl_Position=a_Position+u_trans;\n' +  //设置坐标
+             '}\n';
+        //  旋转
+        /* 
+        x = r*cosa;     => x1 = r*(cosa*cosb-sina*sinb); => x1 = x*cosb - y*sinb;
+        y = r*sina;        y1 = r*(sina*sinb+cosa*cosb);    y1 = x*sinb + y*cosb;
+        */
+        /* var VSHADER_SOURCE =
+            'attribute vec4 a_Position;\n' +
+            'uniform float u_CosB,u_SinB;\n' +
+            'void main(){ \n' + 'gl_Position.x=a_Position.x*u_CosB-a_Position.y*u_SinB;\n' +
+            'gl_Position.y=a_Position.x*u_SinB+a_Position.y*u_CosB;\n' +
+            'gl_Position.z=a_Position.z;gl_Position.w=1.0;\n' + '}\n'; */
+        /* 
+        片元着色器程序
+         */
+        var FSHADER_SOURCE =
+            'void main(){\n' +
+            'gl_FragColor=vec4(0,1,1,1);}'; // 设置颜色rgba,这里注意rgb的值不是0~255而是0~1
+        /* CSEL ES语言------------结束 */
+        function main() {
+            ctx = document.getElementById('canvas');
+            gl = getWebGLContext(ctx);
+            if (!gl) return;
+            // 初始化着色器
+            if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+                console.log('初始化着色器失败');
+                return;
+            }
+            /* ------------------------以上是基础定义------------------------------------ */
+            // 设置顶点位置
+            n = initVertexBuffers(gl);
+            if (n < 0) {
+                console.log('未能设置顶点位置');
+                return;
+            }
+            /* var radian = Math.PI / 2;  // 转为弧度制
+            var cosB = Math.cos(radian);
+            var sinB = Math.sin(radian);
+            var u_CosB = gl.getUniformLocation(gl.program, 'u_CosB');
+            var u_SinB = gl.getUniformLocation(gl.program, 'u_SinB');
+            gl.uniform1f(u_CosB, cosB);
+            gl.uniform1f(u_SinB, sinB); */
+            // 设置canvas背景色
+            gl.clearColor(1, .5, 0, 1);
+            // 清空canvas(注意：清空前，需要设定背景色)
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            // 绘制 三角形  从第一个点开始，绘制 n次
+            // gl.drawArrays(gl.LINES, 0, n);   // 线段
+            // gl.drawArrays(gl.LINE_STRIP, 0, n);  // 线条
+            // gl.drawArrays(gl.LINE_LOOP, 0, n);   // 回路
+            gl.drawArrays(gl.TRIANGLES, 0, n);  // 三角形
+        }
+
+        /* 创建顶点缓冲区对象 */
+        function initVertexBuffers(gl) {
+            /* Float32Array => 类型化数组 */
+            let vertices = new Float32Array([0, 0.5, -0.5, -0.5, 0.5, -0.5]);
+            let n = 3;  // 点的个数
+
+            // 创建缓冲区对象
+            let vartexBuffer = gl.createBuffer();
+            if (!vartexBuffer) {
+                console.log('缓冲区对象创建失败');
+                return -1;
+            }
+            // 将缓冲区对象绑定到目标
+            gl.bindBuffer(gl.ARRAY_BUFFER, vartexBuffer);
+            // 向缓冲区对象中写入数据
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
+            let a_Position = gl.getAttribLocation(gl.program, 'a_Position')
+            if (a_Position < 0) {
+                console.log('未能获取存储变量a_Position的位置')
+                return;
+            }
+            /* 将缓存区对象分配给   a_Postion变量 
+                参数说明 ===》 1.待分配变量名  2. 指定顶点分量个数（1~4），若小于4，则按照
+            vertexAttri[1234]f（）规则补全      3.数据类型   4.是否转化非浮点型数据
+            5.指定顶点间的相邻字节数（默认0）   6.指定缓冲区对象存储数据时的偏移量，默认为0
+            */
+            gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+            /* 连接  a_Postion变量与分配给它的缓冲区对象
+            换句话说，将缓冲区打开，使顶点着色器可以访问缓冲区数据
+             */
+            gl.enableVertexAttribArray(a_Position);
+
+            /* 
+            分步走: 创建 =》绑定目标 =》 写入数据 =》分配变量 =》 缓冲区与变量连接
+                gl.createBuffer() =>   gl.bindBuffer() =>
+                gl.bufferData() => gl.vertexAttribPointer() =>
+                gl.enableVertexAttribArray()
+            
+             */
+            return n;
+        }
+        function move() {
+            let Tx = Ty = Tz = 0;
+            let u_trans = gl.getUniformLocation(gl.program, 'u_trans')
+            if (u_trans < 0) {
+                console.log('未能获取存储变量u_trans的位置')
+                return;
+            }
+            Tx += 0.5;
+            Ty += 0.5;
+            gl.uniform4f(u_trans, Tx, Ty, Tz, 0.0);
+            // 设置canvas背景色
+            gl.clearColor(1, .5, 0, 1);
+            // 清空canvas(注意：清空前，需要设定背景色)
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, n);  // 三角形
+
+        }
+        function Scale() {
+
+        }
+        function Rotate() {
+
+        }
+    </script>
+</body>
+
+</html>

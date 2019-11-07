@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        function main() {
+            /* CSEL ES语言------------开始 */
+            /* 
+             顶点着色器程序  （存储限定符   类型  变量名）
+             */
+            var VSHADER_SOURCE =
+                'attribute vec4 a_Position;\n' +
+                'attribute float a_PointSize;\n' +
+                'void main(){\n' + 'gl_Position = a_Position;\n' +    //设置坐标
+                'gl_PointSize = a_PointSize;\n' +     // 设置尺寸(中心点大小,必须带上小数点.0)
+                '}\n';
+            /* 
+            片元着色器程序
+             */
+            var FSHADER_SOURCE =
+                'void main(){\n' +
+                'gl_FragColor=vec4(0,1,1,1);}'; // 设置颜色rgba
+            /* CSEL ES语言------------结束 */
+            var ctx = document.getElementById('canvas');
+            var gl = getWebGLContext(ctx);
+            if (!gl) return;
+            // 初始化着色器
+            if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+                console.log('初始化着色器失败');
+                return;
+            }
+            // 获取attribute变量存储位置(注意：gl.program（程序对象）是由initShaders函数初始化形成的)
+            var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+            if (a_Position < 0) {
+                console.log('未能获取存储变量a_Position的位置')
+                return;
+            }
+            var a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+            if (a_PointSize < 0) {
+                console.log('未能获取存储变量a_PointSize的位置')
+                return;
+            }
+            /* webgl函数命名规范 => 函数名 参数个数 参数类型 */
+            // 将顶点位置传输给   attribute 变量
+            gl.vertexAttrib3f(a_Position, -0.2, 0, 0);
+            gl.vertexAttrib1f(a_PointSize, 25.0);
+            /* --函数名-gl.vertexAttrib--参数个数-1--参数类型-f(float浮点型) */
+            // 设置背景色
+            gl.clearColor(1, .5, 0, 1);
+            // 清空canvas(注意：清空前，需要设定背景色)
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            // 绘制一个点
+            gl.drawArrays(gl.POINTS, 0, 15)
+        }
+    </script>
+</body>
+
+</html>

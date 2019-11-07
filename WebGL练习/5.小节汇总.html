@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        function main() {
+            /* CSEL ES语言------------开始 */
+            /* 
+             顶点着色器程序:vec4类型第四个参数默认为    1.0
+             */
+            var VSHADER_SOURCE =
+                'void main(){\n' + 'gl_Position=vec4(0,0.5,0,1);\n' +    //设置坐标
+                'gl_PointSize = 10.0;\n' +     // 设置尺寸(中心点大小,必须带上小数点.0)
+                '}\n';
+            /* 
+            片元着色器程序
+             */
+            var FSHADER_SOURCE =
+                'void main(){\n' +
+                'gl_FragColor=vec4(0,1,1,1);}'; // 设置颜色rgba,这里注意rgb的值不是0~255而是0~1
+            /* CSEL ES语言------------结束 */
+            var ctx = document.getElementById('canvas');
+            var gl = getWebGLContext(ctx);
+            if (!gl) return;
+            // 初始化着色器
+            if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+                console.log('初始化着色器失败');
+                return;
+            }
+            // 设置canvas背景色
+            gl.clearColor(1, .5, 0, 1);
+            // 清空canvas(注意：清空前，需要设定背景色)
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            /* 
+            总结：
+            在前面4个案例中我们学到一些关键字，在这里回忆以及总结一下
+                attribute   顶点着色器 的存储限定符   
+                vec4        声明变量类型(GLSL着色器语言)
+                float        声明变量类型(GLSL着色器语言)
+                uniform     片元着色器 的存储限定符 （这里需要注意一下，在声明片元着色前，需要使用精度限定词）
+                precision   精度限定词
+
+                clearColor(rgba)    指定canvas不绘制内容时的默认背景色
+
+                初始化函数
+                initShaders（a,b,c）    三个变量 :gl对象，顶点着色器对象，片元着色器对象
+                获取变量
+                getAttribLocation(el.program,变量名)    顶点着色器（未找到返回-1）
+                getUniformLocation(el.program,变量名)   片元着色器（未找到返回null）
+
+                获取canvas  源对象在浏览器窗口的位置信息及自身宽高基础信息
+                let rect = ev.target.getBoundingClientRect()
+                rect对象有8个值 ，分别是width,height,left,top,right,bottom,x,y;
+                width和height就是       canvas自身的宽高
+                left,top,right,bottom  四个方向值分别是 以浏览器左上角为（0,0）原点计算的距离,所以 
+                right = left + width,bottom = top + height
+                x,y                    这两个值是 canvas图形左上角顶点在浏览器中的坐标
+             */
+
+
+        }
+    </script>
+</body>
+
+</html>

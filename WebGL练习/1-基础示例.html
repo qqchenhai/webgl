@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebGL</title>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="400" height="400">
+        please use the brower supporting "canvas"
+    </canvas>
+    <script src="./static/JS/webgl-utils.js"></script>
+    <script src="./static/JS/webgl-debug.js"></script>
+    <script src="./static/JS/cuon-utils.js"></script>
+    <script src="./static/JS/cuon-matrix.js"></script>
+    <script>
+        function main() {
+            var ctx = document.getElementById('canvas');
+            var gl = getWebGLContext(ctx);
+            if(!gl)return;
+            // 指定清空图层后的 默认背景色
+            gl.clearColor(0,0,0,1);
+            // 使用上面规定背景色清空canvas颜色缓冲区
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+    </script>
+</body>
+
+</html>
